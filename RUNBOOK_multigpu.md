@@ -27,8 +27,9 @@ DDP и FSDP по памяти и построит график. Результа
 упрётся в память, а FSDP ещё влезает):
 ```bash
 torchrun --nproc_per_node=2 bench/scaling.py
-N_LAYER=24 N_EMBD=1024 torchrun --nproc_per_node=2 train_ddp.py    # может OOM
-N_LAYER=24 N_EMBD=1024 torchrun --nproc_per_node=2 train_fsdp.py   # а FSDP влезает
+# OOM-демо (n_embd обязан делиться на n_head!):
+STEPS=20 N_LAYER=32 N_HEAD=16 N_EMBD=2048 torchrun --nproc_per_node=4 train_ddp.py   # DDP -> CUDA OOM
+STEPS=20 N_LAYER=32 N_HEAD=16 N_EMBD=2048 torchrun --nproc_per_node=4 train_fsdp.py  # FSDP влезает (~8 ГБ)
 ```
 FSDP шардирует параметры/градиенты/оптимизатор → меньше памяти на GPU, чем DDP.
 
