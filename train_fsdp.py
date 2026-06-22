@@ -37,7 +37,14 @@ from minigpt.data import get_batch, get_dataset  # noqa: E402
 from minigpt.model import Block  # noqa: E402
 
 
-def main(steps: int = 200, per_rank_bs: int = 32, block_size: int = 128, lr: float = 3e-4) -> None:
+def _envi(name: str, default: int) -> int:
+    return int(os.environ.get(name, default))
+
+
+def main(lr: float = 3e-4) -> None:
+    steps = _envi("STEPS", 200)
+    per_rank_bs = _envi("BATCH", 32)
+    block_size = _envi("BLOCK", 256)
     rank = int(os.environ["RANK"])
     local = int(os.environ.get("LOCAL_RANK", 0))
     world = int(os.environ["WORLD_SIZE"])
@@ -53,7 +60,11 @@ def main(steps: int = 200, per_rank_bs: int = 32, block_size: int = 128, lr: flo
 
     torch.manual_seed(0)
     data, vocab = get_dataset()
-    model = GPT(GPTConfig(vocab_size=vocab, block_size=block_size, tie_weights=False)).to(device)
+    cfg = GPTConfig(
+        vocab_size=vocab, block_size=block_size, tie_weights=False,
+        n_layer=_envi("N_LAYER", 12), n_head=_envi("N_HEAD", 12), n_embd=_envi("N_EMBD", 768),
+    )
+    model = GPT(cfg).to(device)
 
     wrap_policy = functools.partial(transformer_auto_wrap_policy, transformer_layer_cls={Block})
     mixed = MixedPrecision(
