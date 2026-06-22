@@ -1,10 +1,12 @@
-"""Бенчмарк масштабирования throughput. Запускать под torchrun на 1/2/4 GPU —
-строки (world_size, tokens/s, peak_gb) копятся в bench/scaling.csv для кривой
-масштабирования и эффективности (см. README).
+"""Бенчмарк масштабирования throughput. Запускать под torchrun на 1/2/4 GPU.
 
-  torchrun --nproc_per_node=1 bench/scaling.py
-  torchrun --nproc_per_node=2 bench/scaling.py
-  torchrun --nproc_per_node=4 bench/scaling.py
+Строки (world_size, tokens/s, peak_gb, params, config) дописываются в CSV из env
+`CSV_OUT` (по умолчанию bench/scaling.csv). Размер модели/батч — из env
+N_LAYER/N_HEAD/N_EMBD/BATCH/BLOCK/STEPS. Обычно запускается через `run_l2.sh`,
+который задаёт CSV_OUT и конфиги для двух свипов. Прямой запуск:
+
+  CSV_OUT=bench/scaling_compute.csv N_LAYER=16 N_EMBD=1024 BATCH=32 BLOCK=512 \\
+    torchrun --nproc_per_node=4 bench/scaling.py
 """
 from __future__ import annotations
 
