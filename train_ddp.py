@@ -55,6 +55,9 @@ def main(lr: float = 3e-4) -> None:
     opt = torch.optim.AdamW(ddp.parameters(), lr=lr)
     gen = torch.Generator().manual_seed(1000 + rank)  # непересекающиеся доли данных
 
+    if is_main:
+        print(f"старт DDP: world={world}, params={model.num_params():,}, шагов={steps} "
+              f"(прогресс каждые 20)", flush=True)
     ddp.train()
     t0 = time.perf_counter()
     tokens = 0
@@ -65,8 +68,8 @@ def main(lr: float = 3e-4) -> None:
         loss.backward()
         opt.step()
         tokens += x.numel() * world
-        if is_main and step % 50 == 0:
-            print(f"step {step:4d}  loss {loss.item():.3f}")
+        if is_main and step % 20 == 0:
+            print(f"  шаг {step:4d}/{steps}  loss {loss.item():.3f}", flush=True)
 
     if is_main:
         tps = tokens / (time.perf_counter() - t0)

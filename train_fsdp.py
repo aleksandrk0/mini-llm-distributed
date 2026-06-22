@@ -65,6 +65,7 @@ def main(lr: float = 3e-4) -> None:
         n_layer=_envi("N_LAYER", 12), n_head=_envi("N_HEAD", 12), n_embd=_envi("N_EMBD", 768),
     )
     model = GPT(cfg).to(device)
+    nparams = model.num_params()  # до FSDP-обёртки (потом параметры шардируются)
 
     wrap_policy = functools.partial(transformer_auto_wrap_policy, transformer_layer_cls={Block})
     mixed = MixedPrecision(
@@ -87,6 +88,9 @@ def main(lr: float = 3e-4) -> None:
 
     opt = torch.optim.AdamW(fsdp.parameters(), lr=lr)
     gen = torch.Generator().manual_seed(1000 + rank)
+    if is_main:
+        print(f"старт FSDP: world={world}, params={nparams:,}, шагов={steps} "
+              f"(прогресс каждые 20)", flush=True)
     fsdp.train()
     t0 = time.perf_counter()
     tokens = 0
@@ -97,8 +101,8 @@ def main(lr: float = 3e-4) -> None:
         loss.backward()
         opt.step()
         tokens += x.numel() * world
-        if is_main and step % 50 == 0:
-            print(f"step {step:4d}  loss {loss.item():.3f}")
+        if is_main and step % 20 == 0:
+            print(f"  шаг {step:4d}/{steps}  loss {loss.item():.3f}", flush=True)
 
     if is_main:
         dt = time.perf_counter() - t0
