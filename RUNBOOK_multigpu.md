@@ -15,19 +15,20 @@ pip install -r requirements.txt
 nvidia-smi          # убедиться, что видно N GPU
 ```
 
-## 3. Снять точки кривой
+## 3. Снять всё одной командой
 ```bash
-torchrun --nproc_per_node=1 bench/scaling.py
-torchrun --nproc_per_node=2 bench/scaling.py
-torchrun --nproc_per_node=4 bench/scaling.py    # если 4 GPU
-cat bench/scaling.csv
+bash run_l2.sh
 ```
-`bench/scaling.csv` соберёт строки `world_size,tokens_per_s,peak_gb`.
+Скрипт сам определит число GPU, снимет кривую масштабирования (1/2/4), сравнит
+DDP и FSDP по памяти и построит график. Результат: `bench/scaling.csv` +
+`bench/scaling.png`.
 
-## 4. DDP vs FSDP по памяти (тот же конфиг)
+Если хочется по шагам (или OOM-демо — увеличивай `N_LAYER`/`N_EMBD`, пока DDP не
+упрётся в память, а FSDP ещё влезает):
 ```bash
-torchrun --nproc_per_node=4 train_ddp.py        # запомнить peak mem/GPU
-torchrun --nproc_per_node=4 train_fsdp.py       # peak mem/GPU должен быть ниже
+torchrun --nproc_per_node=2 bench/scaling.py
+N_LAYER=24 N_EMBD=1024 torchrun --nproc_per_node=2 train_ddp.py    # может OOM
+N_LAYER=24 N_EMBD=1024 torchrun --nproc_per_node=2 train_fsdp.py   # а FSDP влезает
 ```
 FSDP шардирует параметры/градиенты/оптимизатор → меньше памяти на GPU, чем DDP.
 
