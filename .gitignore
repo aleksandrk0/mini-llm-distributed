@@ -7,10 +7,8 @@ venv/
 .ruff_cache/
 *.egg-info/
 
-# Чекпойнты и сгенерированные артефакты
+# Чекпойнты (CSV-результаты НЕ игнорируем — это доказательная база README)
 *.pt
-bench/scaling.csv
-bench/optim.csv
 
 # IDE / ОС
 .idea/

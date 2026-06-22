@@ -1,0 +1,4 @@
+optimization,tokens_per_s,speedup
+fp32 baseline,19744,1.00
++TF32,36875,1.87
++bf16 AMP,59272,3.00

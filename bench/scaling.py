@@ -82,13 +82,15 @@ def main(warmup: int = 5) -> None:
         sys.stdout.reconfigure(encoding="utf-8")
         tps = tokens / dt
         peak = torch.cuda.max_memory_allocated() / 1e9 if cuda else 0.0
-        out = ROOT / "bench" / "scaling.csv"
+        nparams = model.num_params()
+        conf = f"L{cfg.n_layer}_E{cfg.n_embd}_b{per_rank_bs}_s{block_size}_fp32"
+        out = Path(os.environ.get("CSV_OUT", str(ROOT / "bench" / "scaling.csv")))
         header = not out.exists()
         with open(out, "a", encoding="utf-8") as f:
             if header:
-                f.write("world_size,tokens_per_s,peak_gb\n")
-            f.write(f"{world},{tps:.0f},{peak:.2f}\n")
-        print(f"world={world}  {tps:,.0f} ток/с  peak {peak:.2f} GB -> bench/scaling.csv")
+                f.write("world_size,tokens_per_s,peak_gb,params,config\n")
+            f.write(f"{world},{tps:.0f},{peak:.2f},{nparams},{conf}\n")
+        print(f"world={world}  params={nparams:,}  {conf}  {tps:,.0f} ток/с  peak {peak:.2f} GB")
     dist.destroy_process_group()
 
 
