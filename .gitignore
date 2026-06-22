@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# Чекпойнты и сгенерированные артефакты
+*.pt
+bench/scaling.csv
+
+# IDE / ОС
+.idea/
+.vscode/
+.DS_Store
