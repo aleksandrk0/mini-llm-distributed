@@ -12,7 +12,7 @@
 ```bash
 git clone https://github.com/aleksandrk0/mini-llm-distributed
 cd mini-llm-distributed
-pip install -r requirements.txt
+pip install -e .    # ставит пакет minigpt + зависимости
 nvidia-smi          # убедиться, что видно N GPU
 ```
 Возможные готчи (встречались на практике):

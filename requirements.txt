@@ -1,5 +1,0 @@
-# CPU-сборки достаточно для train_single, теста корректности DDP (gloo) и линта.
-# Для FSDP и реальных scaling-прогонов нужен GPU-PyTorch (CUDA) — см. RUNBOOK.
-torch>=2.1
-numpy>=1.24
-matplotlib>=3.7   # для bench/plot.py (график масштабирования)

@@ -1,7 +1,7 @@
 .PHONY: install single ddp fsdp correctness scaling test lint
 
 install:
-	pip install -r requirements.txt
+	pip install -e .
 
 single:
 	python train_single.py

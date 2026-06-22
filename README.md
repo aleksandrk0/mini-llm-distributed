@@ -17,7 +17,7 @@
 | Проверка | Результат |
 | --- | --- |
 | **Корректность DDP** = одиночный процесс | `max\|grad_DDP − grad_single\| ~ 1e-8` (≪ 1e-4) |
-| Тесты (модель, данные, DDP) | 6 passed |
+| Тесты (модель, данные, DDP) | 7 passed |
 | Throughput одиночного процесса (CPU, 0.8M параметров) | ~73 000 ток/с |
 
 **Почему это важно.** DDP усредняет градиенты через all-reduce: каждый ранг считает
@@ -59,7 +59,7 @@ python -m minigpt.distributed     # печатает max |grad_DDP - grad_single
 ## Запуск
 
 ```bash
-pip install -r requirements.txt
+pip install -e .                                # ставит пакет minigpt + зависимости
 
 python train_single.py                          # базовая тренировка (1 процесс)
 python -m minigpt.distributed                   # доказательство корректности DDP
