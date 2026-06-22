@@ -21,7 +21,9 @@ def _load(name: str):
         rows = sorted(csv.DictReader(f), key=lambda r: int(r["world_size"]))
     ws = [int(r["world_size"]) for r in rows]
     tps = [float(r["tokens_per_s"]) for r in rows]
-    eff = [tps[i] / (ws[i] * tps[0]) for i in range(len(ws))]
+    rate = {w: t / w for w, t in zip(ws, tps, strict=False)}  # throughput на 1 GPU
+    base = rate.get(1, rate[min(ws)])  # эталон — точка 1 GPU (иначе наименьший world)
+    eff = [rate[w] / base for w in ws]
     return ws, eff
 
 

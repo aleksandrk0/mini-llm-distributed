@@ -61,6 +61,7 @@ def main(lr: float = 3e-4) -> None:
     torch.manual_seed(0)
     data, vocab = get_dataset()
     cfg = GPTConfig(
+        # tie_weights=False: общий tok/head-тензор конфликтует с FULL_SHARD-шардингом
         vocab_size=vocab, block_size=block_size, tie_weights=False,
         n_layer=_envi("N_LAYER", 12), n_head=_envi("N_HEAD", 12), n_embd=_envi("N_EMBD", 768),
     )
@@ -92,6 +93,7 @@ def main(lr: float = 3e-4) -> None:
         print(f"старт FSDP: world={world}, params={nparams:,}, шагов={steps} "
               f"(прогресс каждые 20)", flush=True)
     fsdp.train()
+    warmup = 5  # первые шаги не считаем (прогрев), замер с cuda.synchronize
     t0 = time.perf_counter()
     tokens = 0
     for step in range(steps):
@@ -100,10 +102,15 @@ def main(lr: float = 3e-4) -> None:
         opt.zero_grad()
         loss.backward()
         opt.step()
+        if step == warmup:
+            torch.cuda.synchronize()
+            t0 = time.perf_counter()
+            tokens = 0
         tokens += x.numel() * world
         if is_main and step % 20 == 0:
             print(f"  шаг {step:4d}/{steps}  loss {loss.item():.3f}", flush=True)
 
+    torch.cuda.synchronize()
     if is_main:
         dt = time.perf_counter() - t0
         peak = torch.cuda.max_memory_allocated() / 1e9

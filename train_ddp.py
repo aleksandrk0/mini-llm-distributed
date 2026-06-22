@@ -59,6 +59,7 @@ def main(lr: float = 3e-4) -> None:
         print(f"старт DDP: world={world}, params={model.num_params():,}, шагов={steps} "
               f"(прогресс каждые 20)", flush=True)
     ddp.train()
+    warmup = 5  # первые шаги не считаем (прогрев), замер с cuda.synchronize
     t0 = time.perf_counter()
     tokens = 0
     for step in range(steps):
@@ -67,10 +68,17 @@ def main(lr: float = 3e-4) -> None:
         opt.zero_grad()
         loss.backward()
         opt.step()
+        if step == warmup:
+            if cuda:
+                torch.cuda.synchronize()
+            t0 = time.perf_counter()
+            tokens = 0
         tokens += x.numel() * world
         if is_main and step % 20 == 0:
             print(f"  шаг {step:4d}/{steps}  loss {loss.item():.3f}", flush=True)
 
+    if cuda:
+        torch.cuda.synchronize()
     if is_main:
         tps = tokens / (time.perf_counter() - t0)
         msg = f"итог world={world}: {tps:,.0f} ток/с, params={model.num_params():,}"

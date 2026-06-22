@@ -6,6 +6,7 @@ weight tying эмбеддингов и выходной головы.
 """
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 
 import torch
@@ -83,10 +84,28 @@ class GPT(nn.Module):
         self.ln_f = nn.LayerNorm(cfg.n_embd)
         self.head = nn.Linear(cfg.n_embd, cfg.vocab_size, bias=False)
         if cfg.tie_weights:
-            self.tok.weight = self.head.weight  # weight tying
+            self.tok.weight = self.head.weight  # weight tying (до init: общий тензор)
+
+        # GPT-2 инициализация: normal(0, 0.02); residual-проекции масштабируются на
+        # 1/sqrt(2*n_layer) — иначе дисперсия растёт с глубиной (важно на L16+).
+        self.apply(self._init_weights)
+        std = 0.02 / math.sqrt(2 * cfg.n_layer)
+        for name, p in self.named_parameters():
+            if name.endswith("proj.weight"):  # attn.proj и mlp.proj — выход residual
+                nn.init.normal_(p, mean=0.0, std=std)
+
+    @staticmethod
+    def _init_weights(module: nn.Module) -> None:
+        if isinstance(module, nn.Linear):
+            nn.init.normal_(module.weight, mean=0.0, std=0.02)
+            if module.bias is not None:
+                nn.init.zeros_(module.bias)
+        elif isinstance(module, nn.Embedding):
+            nn.init.normal_(module.weight, mean=0.0, std=0.02)
 
     def forward(self, idx: torch.Tensor, targets: torch.Tensor | None = None):
         _, t = idx.shape
+        assert t <= self.cfg.block_size, f"seq {t} > block_size {self.cfg.block_size}"
         pos = torch.arange(t, device=idx.device)
         x = self.tok(idx) + self.pos(pos)[None, :, :]
         for block in self.blocks:

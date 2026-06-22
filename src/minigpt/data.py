@@ -34,6 +34,8 @@ def get_batch(
     device: str = "cpu",
 ) -> tuple[torch.Tensor, torch.Tensor]:
     high = len(data) - block_size - 1
+    if high <= 0:
+        raise ValueError(f"датасет ({len(data)} токенов) короче block_size {block_size}")
     ix = torch.randint(high, (batch_size,), generator=generator)
     x = torch.stack([data[i : i + block_size] for i in ix])
     y = torch.stack([data[i + 1 : i + 1 + block_size] for i in ix])

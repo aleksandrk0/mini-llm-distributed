@@ -40,7 +40,7 @@ STEPS=20 N_LAYER=32 N_HEAD=16 N_EMBD=2048 torchrun --nproc_per_node=4 train_fsdp
 Числа самодокументированы: в CSV есть колонки `params`/`config`, эффективность и график
 строит `bench/plot.py` — **руками в README ничего пересчитывать и вписывать не надо**.
 ```bash
-git add bench/*.csv bench/scaling.png
+git add bench/scaling_compute.csv bench/scaling_comm.csv bench/optim.csv bench/scaling.png
 git commit -m "bench: scaling/memory/optim на <твоё-железо>"
 ```
 Если твои числа заметно отличаются от текущих в README — обнови таблицы под свой прогон

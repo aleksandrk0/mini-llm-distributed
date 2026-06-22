@@ -16,6 +16,14 @@ def test_param_count_positive():
     assert GPT(GPTConfig()).num_params() > 0
 
 
+def test_tying_param_delta():
+    # untied считает tok и head отдельно -> ровно +vocab*n_embd параметров
+    kw = dict(vocab_size=50, block_size=64, n_layer=2, n_head=2, n_embd=128)
+    tied = GPT(GPTConfig(**kw, tie_weights=True))
+    untied = GPT(GPTConfig(**kw, tie_weights=False))
+    assert untied.num_params() - tied.num_params() == kw["vocab_size"] * kw["n_embd"]
+
+
 def test_weight_tying_toggle():
     tied = GPT(GPTConfig(tie_weights=True))
     untied = GPT(GPTConfig(tie_weights=False))

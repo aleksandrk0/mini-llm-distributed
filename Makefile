@@ -16,7 +16,7 @@ fsdp:
 	torchrun --nproc_per_node=4 train_fsdp.py
 
 scaling:
-	torchrun --nproc_per_node=2 bench/scaling.py
+	bash run_l2.sh
 
 test:
 	pytest

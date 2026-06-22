@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import os
+import socket
 import tempfile
 
 import torch
@@ -42,9 +43,18 @@ def _grad_vector(model: torch.nn.Module) -> torch.Tensor:
     return torch.cat([p.grad.reshape(-1) for p in model.parameters() if p.grad is not None])
 
 
-def _worker(rank: int, world_size: int, per_rank_bs: int, result_path: str) -> None:
-    os.environ.setdefault("MASTER_ADDR", "127.0.0.1")
-    os.environ.setdefault("MASTER_PORT", "29512")
+def _free_port() -> int:
+    s = socket.socket()
+    s.bind(("127.0.0.1", 0))
+    port = s.getsockname()[1]
+    s.close()
+    return port
+
+
+def _worker(rank: int, world_size: int, per_rank_bs: int, port: int, result_path: str) -> None:
+    os.environ["MASTER_ADDR"] = "127.0.0.1"
+    os.environ["MASTER_PORT"] = str(port)
+    os.environ.setdefault("USE_LIBUV", "0")  # Windows-сборки torch без libuv
     dist.init_process_group("gloo", rank=rank, world_size=world_size)
 
     model = _build_model(seed=0)  # одинаковая инициализация на всех рангах
@@ -76,8 +86,9 @@ def measure_ddp_vs_single(world_size: int = 2, per_rank_bs: int = 4) -> float:
     """
     fd, path = tempfile.mkstemp(suffix=".json")
     os.close(fd)
+    port = _free_port()
     try:
-        mp.spawn(_worker, args=(world_size, per_rank_bs, path), nprocs=world_size, join=True)
+        mp.spawn(_worker, args=(world_size, per_rank_bs, port, path), nprocs=world_size, join=True)
         with open(path, encoding="utf-8") as f:
             return float(json.load(f)["max_grad_diff"])
     finally:
